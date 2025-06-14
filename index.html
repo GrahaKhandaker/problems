@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Graph & Integrate Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary-color: #3182ce;
+    --primary-hover: #2c5282;
+    --success-color: #2f855a;
+    --success-dark: #22543d;
+    --text-color: #2d3748;
+    --bg-color: #f0f4f8;
+    --panel-color: #ffffff;
+    --shadow-color: rgba(0,0,0,0.12);
+    --axis-color: #718096;
+    --tick-color: #4a5568;
+    --highlight-color: rgba(66, 153, 225, 0.3);
+    /* Colors for graphs */
+    --graph-color-1: #3182ce; /* Original blue */
+    --graph-color-2: #e53e3e; /* Red */
+    --graph-color-3: #38a169; /* Green */
+    --graph-color-4: #d69e2e; /* Yellow */
+    --area-color: rgba(226, 72, 72, 0.3);
+    --enclosed-area-color: rgba(128, 90, 213, 0.3);
+    transition: all 0.3s ease;
+  }
+
+  [data-theme="dark"] {
+    --text-color: #e2e8f0;
+    --bg-color: #1a202c;
+    --panel-color: #2d3748;
+    --shadow-color: rgba(0,0,0,0.3);
+    --axis-color: #a0aec0;
+    --tick-color: #e2e8f0;
+    --highlight-color: rgba(66, 153, 225, 0.5);
+    --area-color: rgba(252, 129, 129, 0.3);
+    --enclosed-area-color: rgba(159, 122, 234, 0.4);
+    --graph-color-1: #63b3ed;
+    --graph-color-2: #fc8181;
+    --graph-color-3: #68d391;
+    --graph-color-4: #f6e05e;
+  }
+
+  [data-theme="violet"] { --bg-color: #f5f3ff; --panel-color: #ede9fe; --primary-color: #7c3aed; --primary-hover: #5b21b6; }
+  [data-theme="cyan"] { --bg-color: #ecfeff; --panel-color: #cffafe; --primary-color: #06b6d4; --primary-hover: #0891b2; }
+  [data-theme="green"] { --bg-color: #f0fdf4; --panel-color: #dcfce7; --primary-color: #16a34a; --primary-hover: #15803d; }
+  [data-theme="rose"] { --bg-color: #fff1f2; --panel-color: #ffe4e6; --primary-color: #e11d48; --primary-hover: #be123c; }
+  [data-theme="amber"] { --bg-color: #fffbeb; --panel-color: #fef3c7; --primary-color: #d97706; --primary-hover: #b45309; }
+  [data-theme="indigo"] { --bg-color: #eef2ff; --panel-color: #e0e7ff; --primary-color: #4f46e5; --primary-hover: #4338ca; }
+  [data-theme="teal"] { --bg-color: #f0fdfa; --panel-color: #ccfbf1; --primary-color: #0d9488; --primary-hover: #0f766e; }
+  [data-theme="fuchsia"] { --bg-color: #fdf4ff; --panel-color: #fae8ff; --primary-color: #c026d3; --primary-hover: #a21caf; }
+  
+  body {
+    margin: 0;
+    background: var(--bg-color);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    color: var(--text-color);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    padding: 15px 10px 40px;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  h1 {
+    margin-top: 20px;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    font-size: 2.2rem;
+    color: var(--text-color);
+    user-select: none;
+    text-shadow: 0 2px 4px var(--shadow-color);
+    letter-spacing: -0.5px;
+  }
+
+  #history-panel {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: var(--panel-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    padding: 15px;
+    max-height: 70vh;
+    overflow-y: auto;
+    width: 250px;
+    z-index: 100;
+    transform: translateX(-300px);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+
+  #history-panel.show { transform: translateX(0); opacity: 1; }
+  #history-panel h3 { margin: 0 0 10px 0; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 1.1rem; color: var(--text-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 5px; }
+  #history-list { list-style: none; padding: 0; margin: 0; }
+  #history-list li { padding: 8px 10px; margin: 5px 0; background: rgba(0,0,0,0.05); border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-family: 'Inter', sans-serif; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #history-list li:hover { background: var(--primary-color); color: white; }
+
+  #history-toggle { position: fixed; top: 20px; left: 20px; background: var(--primary-color); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; z-index: 101; transition: all 0.3s ease; }
+  #history-toggle:hover { background: var(--primary-hover); transform: translateY(-2px); }
+
+  #instructions { background: var(--panel-color); max-width: 900px; width: 90%; border-radius: 12px; box-shadow: 0 5px 18px var(--shadow-color); padding: 20px 25px; margin: 20px 0; color: var(--text-color); font-size: 1rem; line-height: 1.5; user-select: text; transition: all 0.3s ease; }
+  #instructions strong { color: var(--primary-color); }
+  #instructions code { background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+  [data-theme="dark"] #instructions code { background: rgba(255,255,255,0.1); }
+
+  #controls { background: var(--panel-color); box-shadow: 0 4px 16px var(--shadow-color); border-radius: 12px; padding: 0; margin: 20px 0 10px; width: 90%; max-width: 800px; transition: all 0.3s ease; overflow: hidden;}
+  
+  .tab-container { display: flex; border-bottom: 2px solid var(--axis-color); }
+  .tab-btn { flex: 1; padding: 15px; background: none; border: none; font-size: 1.1rem; font-weight: 600; color: var(--axis-color); cursor: pointer; transition: all 0.2s ease; border-bottom: 3px solid transparent; }
+  .tab-btn.active { color: var(--primary-color); border-bottom-color: var(--primary-color); }
+  .tab-content { padding: 25px 30px; }
+  #enclosedTab { display: none; }
+
+  label { display: block; font-weight: 600; margin-bottom: 6px; color: var(--text-color); user-select: none; }
+  
+  input[type="text"], input[type="number"] { width: 100%; padding: 12px 14px; border: 1.5px solid var(--axis-color); border-radius: 8px; font-size: 1rem; transition: all 0.25s ease; outline-offset: 2px; margin-bottom: 20px; background: var(--panel-color); color: var(--text-color); }
+  input[type="text"]:focus, input[type="number"]:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px var(--highlight-color); }
+  
+  #checkboxes, #integration-axis-selector { display: flex; gap: 30px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+  #checkboxes label, #integration-axis-selector label { font-weight: 500; color: var(--text-color); user-select: none; cursor: pointer; display:flex; align-items:center; }
+  #checkboxes input[type="checkbox"], #integration-axis-selector input[type="radio"] { margin-right: 8px; width: 18px; height: 18px; cursor: pointer; }
+
+  #limits, #enclosed-limits { margin-bottom: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  #limits div, #enclosed-limits div { display: flex; flex-direction: column; }
+  
+  button { background: var(--primary-color); color: white; border: none; padding: 14px 24px; font-size: 1.1rem; font-weight: 600; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; user-select: none; }
+  button:hover { background: var(--primary-hover); transform: translateY(-2px); box-shadow: 0 4px 8px var(--shadow-color); }
+
+  #theme-selector { position: fixed; top: 20px; right: 20px; display: flex; gap: 8px; z-index: 100; }
+  .theme-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; cursor: pointer; transition: transform 0.2s ease; }
+  .theme-btn:hover { transform: scale(1.2); }
+  .theme-btn.active { transform: scale(1.2); box-shadow: 0 0 0 2px var(--text-color); }
+  
+  #resultsContainer, #enclosed-resultsContainer { background: var(--panel-color); max-width: 800px; width: 90%; border-radius: 12px; box-shadow: 0 4px 16px var(--shadow-color); padding: 18px 25px; display: flex; justify-content: space-around; gap: 40px; margin-bottom: 25px; transition: all 0.3s ease; }
+  #resultsContainer > div, #enclosed-resultsContainer > div { flex: 1; text-align: center; color: var(--success-color); }
+  #resultsContainer > div span, #enclosed-resultsContainer > div span { display: block; margin-top: 6px; font-weight: 700; font-size: 1.6rem; color: var(--success-dark); user-select: text; }
+
+  #graphContainer { box-shadow: 0 8px 30px var(--shadow-color); border-radius: 15px; overflow: hidden; background: var(--panel-color); width: 90%; max-width: 900px; height: 550px; touch-action: none; transition: all 0.3s ease; }
+  
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+
+  #function-inputs { display: grid; grid-template-columns: 1fr; gap: 5px; margin-bottom: 20px; }
+  .function-input-group { position: relative; }
+  .function-input-group .color-indicator { position: absolute; left: -20px; top: 12px; width: 10px; height: 10px; border-radius: 50%; }
+  
+  @media (max-width: 768px) {
+    #limits, #enclosed-limits { grid-template-columns: 1fr; gap: 10px; }
+  }
+  @media (max-width: 600px) {
+    .tab-content { padding: 20px; }
+    button { width: 100%; font-size: 1rem; padding: 12px; }
+    #checkboxes, #integration-axis-selector { flex-direction: column; gap: 15px; align-items: flex-start; }
+    #resultsContainer, #enclosed-resultsContainer { flex-direction: column; gap: 20px; text-align: center; }
+    #theme-selector { top: 60px; right: 10px; flex-wrap: wrap; width: 100px; justify-content: flex-end; }
+    #history-panel { width: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="history-panel">
+  <h3>Equation History</h3>
+  <ul id="history-list"></ul>
+</div>
+
+<button id="history-toggle" aria-label="Show equation history">
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 9 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg>
+  History
+</button>
+
+<div id="theme-selector">
+  <div class="theme-btn" data-theme="light" style="background: #f0f4f8;" title="Light"></div>
+  <div class="theme-btn" data-theme="dark" style="background: #1a202c;" title="Dark"></div>
+  <div class="theme-btn" data-theme="violet" style="background: #7c3aed;" title="Violet"></div>
+  <div class="theme-btn" data-theme="cyan" style="background: #06b6d4;" title="Cyan"></div>
+  <div class="theme-btn" data-theme="green" style="background: #16a34a;" title="Green"></div>
+  <div class="theme-btn" data-theme="rose" style="background: #e11d48;" title="Rose"></div>
+  <div class="theme-btn" data-theme="amber" style="background: #d97706;" title="Amber"></div>
+  <div class="theme-btn" data-theme="indigo" style="background: #4f46e5;" title="Indigo"></div>
+</div>
+
+<h1>Graph & Integrate Calculator</h1>
+
+<section id="instructions" aria-label="Instructions for using the graph and integration calculator">
+  <strong>Welcome!</strong> This tool lets you:
+  <ul>
+    <li><strong>Enter functions of <code>x</code></strong> to visualize (e.g., <code>x^2 + 6*x - 9</code>)</li>
+    <li><strong>Plot parabolas</strong> like <code>y^2 = 16x</code> or <code>(x-1)^2 = 8(y+2)</code></li>
+    <li><strong>Plot circles</strong> using <code>(x-h)^2 + (y-k)^2 = r^2</code> format</li>
+    <li><strong>Plot ellipses</strong> using <code>(x-h)^2/a^2 + (y-k)^2/b^2 = 1</code> format</li>
+    <li><strong>Calculate area and integral values</strong> with respect to either the <strong>x-axis</strong> or the <strong>y-axis</strong>.</li>
+    <li>Use the <strong>"Calculate Enclosed Area"</strong> tab to find the area between multiple functions.</li>
+    <li>You can <strong>zoom in/out with mouse wheel</strong> and <strong>drag the graph</strong> to explore.</li>
+  </ul>
+  Just type your function, check your options, and press "Plot Graph" to see your results!
+</section>
+
+<div id="controls" role="region" aria-label="Function input and options">
+    <div class="tab-container">
+        <button id="standard-tab-btn" class="tab-btn active">Standard Integral</button>
+        <button id="enclosed-tab-btn" class="tab-btn">Calculate Enclosed Area</button>
+    </div>
+
+    <!-- ===== ORIGINAL CALCULATOR (UNTOUCHED) ===== -->
+    <div id="standardTab" class="tab-content">
+        <label for="funcInput">Enter your function <code>f(x)</code> or equation (e.g., <em>y^2 = 8x</em>):</label>
+        <input id="funcInput" type="text" placeholder="Type function or equation here" value="x^2 + 6*x - 9" aria-describedby="functionHelp" />
+        <small id="functionHelp" style="color: var(--axis-color); display:block; margin-bottom:15px;">Use standard math notation, e.g., x^2, sin(x), or conic section equations.</small>
+        
+        <div id="checkboxes">
+            <label><input type="checkbox" id="showGraph" checked /> Show Graph</label>
+            <label><input type="checkbox" id="showIntegral" /> Show Integral Area & Value</label>
+        </div>
+
+        <div id="integral-options" style="display:none;">
+            <div id="integration-axis-selector">
+                <label><input type="radio" name="integration-axis" value="x" checked> Integrate w.r.t. x</label>
+                <label><input type="radio" name="integration-axis" value="y"> Integrate w.r.t. y</label>
+            </div>
+            <div id="limits">
+                <div>
+                    <label id="lowerLimitLabel" for="lowerLimit">Lower x-limit (a):</label>
+                    <input id="lowerLimit" type="number" value="0" step="any" aria-label="Lower limit for integral" />
+                </div>
+                <div>
+                    <label id="upperLimitLabel" for="upperLimit">Upper x-limit (b):</label>
+                    <input id="upperLimit" type="number" value="2" step="any" aria-label="Upper limit for integral" />
+                </div>
+            </div>
+        </div>
+        <button id="drawBtn" aria-label="Draw or update graph and integral">Plot Graph</button>
+    </div>
+
+    <!-- ===== NEW ENCLOSED AREA CALCULATOR ===== -->
+    <div id="enclosedTab" class="tab-content">
+        <p style="color: var(--axis-color); margin-top: -15px; margin-bottom:15px;">Enter up to 4 functions to find the enclosed area between them.</p>
+        <div id="function-inputs">
+            <div class="function-input-group">
+                <span class="color-indicator" style="background-color: var(--graph-color-1);"></span>
+                <input class="enclosed-func-input" type="text" placeholder="f(x), e.g., x^2" value="x^2" aria-label="Function 1">
+            </div>
+            <div class="function-input-group">
+                <span class="color-indicator" style="background-color: var(--graph-color-2);"></span>
+                <input class="enclosed-func-input" type="text" placeholder="g(x), e.g., -x + 2" value="-x + 2" aria-label="Function 2">
+            </div>
+            <div class="function-input-group">
+                <span class="color-indicator" style="background-color: var(--graph-color-3);"></span>
+                <input class="enclosed-func-input" type="text" placeholder="h(x) (optional)" aria-label="Function 3">
+            </div>
+            <div class="function-input-group">
+                <span class="color-indicator" style="background-color: var(--graph-color-4);"></span>
+                <input class="enclosed-func-input" type="text" placeholder="k(x) (optional)" aria-label="Function 4">
+            </div>
+        </div>
+
+        <div id="enclosed-limits">
+            <div>
+                <label for="enclosed-lowerLimit">Lower x-limit (a):</label>
+                <input id="enclosed-lowerLimit" type="number" value="-2" step="any" aria-label="Lower limit for enclosed area" />
+            </div>
+            <div>
+                <label for="enclosed-upperLimit">Upper x-limit (b):</label>
+                <input id="enclosed-upperLimit" type="number" value="1" step="any" aria-label="Upper limit for enclosed area" />
+            </div>
+        </div>
+        <button id="enclosed-drawBtn" aria-label="Draw or update enclosed area graph">Plot Enclosed Area</button>
+    </div>
+</div>
+
+<div id="resultsContainer" aria-live="polite" aria-atomic="true" aria-label="Integral and area results">
+  <div id="resultDiv">Integral Value: <span id="result"></span></div>
+  <div id="areaDiv">Absolute Area: <span id="areaResult"></span></div>
+</div>
+
+<div id="enclosed-resultsContainer" aria-live="polite" aria-atomic="true" aria-label="Enclosed area result" style="display: none;">
+  <div>Enclosed Area: <span id="enclosed-areaResult"></span></div>
+</div>
+
+
+<div id="graphContainer" aria-label="Graph display area">
+  <canvas id="graphCanvas" width="900" height="550"></canvas>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
+<script>
+// ===== GLOBAL ELEMENTS & STATE =====
+const canvas = document.getElementById('graphCanvas');
+const ctx = canvas.getContext('2d');
+let scale = 50, offsetX = canvas.width / 2, offsetY = canvas.height / 2;
+let isDragging = false, dragStartX, dragStartY, dragOffsetX, dragOffsetY;
+let touchStartDistance = null, touchStartScale = null, touchStartOffsetX = null, touchStartOffsetY = null;
+let equationHistory = [];
+
+// --- TABS ---
+const standardTab = document.getElementById('standardTab');
+const enclosedTab = document.getElementById('enclosedTab');
+const standardTabBtn = document.getElementById('standard-tab-btn');
+const enclosedTabBtn = document.getElementById('enclosed-tab-btn');
+const standardResults = document.getElementById('resultsContainer');
+const enclosedResults = document.getElementById('enclosed-resultsContainer');
+
+let activeTab = 'standard';
+
+standardTabBtn.addEventListener('click', () => {
+    activeTab = 'standard';
+    standardTab.style.display = 'block';
+    enclosedTab.style.display = 'none';
+    standardTabBtn.classList.add('active');
+    enclosedTabBtn.classList.remove('active');
+    standardResults.style.display = 'flex';
+    enclosedResults.style.display = 'none';
+    standard_handlePlotRequest(); // Redraw original graph
+});
+
+enclosedTabBtn.addEventListener('click', () => {
+    activeTab = 'enclosed';
+    standardTab.style.display = 'none';
+    enclosedTab.style.display = 'block';
+    standardTabBtn.classList.remove('active');
+    enclosedTabBtn.classList.add('active');
+    standardResults.style.display = 'none';
+    enclosedResults.style.display = 'flex';
+    enclosed_handlePlotRequest(); // Redraw enclosed area graph
+});
+
+
+// ===== ORIGINAL CALCULATOR LOGIC (UNTOUCHED, BUT RENAMED/SCOPED) =====
+{
+  const funcInput = document.getElementById('funcInput');
+  const showGraphCheckbox = document.getElementById('showGraph');
+  const showIntegralCheckbox = document.getElementById('showIntegral');
+  const integralOptionsDiv = document.getElementById('integral-options');
+  const lowerLimitInput = document.getElementById('lowerLimit');
+  const upperLimitInput = document.getElementById('upperLimit');
+  const lowerLimitLabel = document.getElementById('lowerLimitLabel');
+  const upperLimitLabel = document.getElementById('upperLimitLabel');
+  const integrationAxisRadios = document.querySelectorAll('input[name="integration-axis"]');
+  const drawBtn = document.getElementById('drawBtn');
+  const resultSpan = document.getElementById('result');
+  const areaSpan = document.getElementById('areaResult');
+  const historyToggle = document.getElementById('history-toggle');
+  const historyPanel = document.getElementById('history-panel');
+  const historyList = document.getElementById('history-list');
+
+  const FUNCTION_TYPE = { STANDARD: 'standard', CIRCLE: 'circle', ELLIPSE: 'ellipse', PARABOLA: 'parabola' };
+  let currentFunctionType = FUNCTION_TYPE.STANDARD;
+  let compiledFunc = null;
+  let circleParams = null;
+  let ellipseParams = null;
+  let parabolaParams = null;
+
+  function addToHistory(equation) {
+    if (equationHistory.includes(equation)) return;
+    equationHistory.unshift(equation);
+    if (equationHistory.length > 20) equationHistory.pop();
+    updateHistoryDisplay();
+  }
+
+  function updateHistoryDisplay() {
+    historyList.innerHTML = '';
+    equationHistory.forEach(eq => {
+      const li = document.createElement('li');
+      li.textContent = eq;
+      li.addEventListener('click', () => {
+        // When history is clicked, switch to the appropriate tab
+        // This basic version assumes history is for the standard tab.
+        if (activeTab !== 'standard') standardTabBtn.click();
+        funcInput.value = eq;
+        historyPanel.classList.remove('show');
+        standard_handlePlotRequest();
+      });
+      historyList.appendChild(li);
+    });
+  }
+  historyToggle.addEventListener('click', () => historyPanel.classList.toggle('show'));
+
+  showIntegralCheckbox.addEventListener('change', () => {
+    integralOptionsDiv.style.display = showIntegralCheckbox.checked ? 'block' : 'none';
+    if(!showIntegralCheckbox.checked) {
+      resultSpan.textContent = '';
+      areaSpan.textContent = '';
+      standard_draw(); 
+    } else {
+      standard_draw();
+    }
+  });
+  
+  integrationAxisRadios.forEach(radio => radio.addEventListener('change', () => {
+      const axis = document.querySelector('input[name="integration-axis"]:checked').value;
+      if (axis === 'x') {
+          lowerLimitLabel.textContent = 'Lower x-limit (a):';
+          upperLimitLabel.textContent = 'Upper x-limit (b):';
+      } else {
+          lowerLimitLabel.textContent = 'Lower y-limit (c):';
+          upperLimitLabel.textContent = 'Upper y-limit (d):';
+      }
+      standard_draw();
+  }));
+
+    function parseSigned(str) {
+        if (!str) return 0;
+        return parseFloat(str.replace(/([+-])(\d)/, '$1 $2').split(' ')[0]);
+    }
+    
+  function standard_compileFunction(expr) {
+    const originalExpr = expr;
+    expr = expr.replace(/\s+/g, '').toLowerCase();
+    circleParams = null; ellipseParams = null; parabolaParams = null;
+    const p_horizontal = /^(?:\(y([+-]\d+\.?\d*|[-+]\.\d+)\)|y)\^2=([+-]?\d*\.?\d*)\*?(?:\(x([+-]\d+\.?\d*|[-+]\.\d+)\)|x)$/;
+    let match = expr.match(p_horizontal);
+    if(match){
+        const k = -parseSigned(match[1]) || 0;
+        const four_a = match[2] === '-' ? -1 : (match[2] === '' || match[2] === '+') ? 1 : parseFloat(match[2]);
+        const h = -parseSigned(match[3]) || 0;
+        if(!isNaN(h) && !isNaN(k) && !isNaN(four_a) && four_a !== 0){
+            currentFunctionType = FUNCTION_TYPE.PARABOLA;
+            parabolaParams = { type: 'horizontal', h, k, a: four_a / 4 };
+            return true;
+        }
+    }
+    const p_vertical = /^(?:\(x([+-]\d+\.?\d*|[-+]\.\d+)\)|x)\^2=([+-]?\d*\.?\d*)\*?(?:\(y([+-]\d+\.?\d*|[-+]\.\d+)\)|y)$/;
+    match = expr.match(p_vertical);
+    if(match){
+        const h = -parseSigned(match[1]) || 0;
+        const four_a = match[2] === '-' ? -1 : (match[2] === '' || match[2] === '+') ? 1 : parseFloat(match[2]);
+        const k = -parseSigned(match[3]) || 0;
+        if(!isNaN(h) && !isNaN(k) && !isNaN(four_a) && four_a !== 0){
+            currentFunctionType = FUNCTION_TYPE.PARABOLA;
+            parabolaParams = { type: 'vertical', h, k, a: four_a / 4 };
+            return true;
+        }
+    }
+    const circleMatch = expr.match(/^\(x([+-]\d*\.?\d*)\)\^2\+\(y([+-]\d*\.?\d*)\)\^2=([\d\.]+)$/);
+    if (circleMatch) {
+      const h = -parseFloat(circleMatch[1] || '0'); const k = -parseFloat(circleMatch[2] || '0'); const r = Math.sqrt(parseFloat(circleMatch[3]));
+      if (![h, k, r].some(isNaN) && r > 0) { currentFunctionType = FUNCTION_TYPE.CIRCLE; circleParams = { h, k, r }; return true; }
+    }
+    const ellipseMatch = expr.match(/^\(x([+-]\d*\.?\d*)\)\^2\/([\d\.]+)\+\(y([+-]\d*\.?\d*)\)\^2\/([\d\.]*)=1$/);
+    if (ellipseMatch) {
+      const h = -parseFloat(ellipseMatch[1]||'0'); const a = Math.sqrt(parseFloat(ellipseMatch[2])); const k = -parseFloat(ellipseMatch[3]||'0'); const b = Math.sqrt(parseFloat(ellipseMatch[4]));
+      if (![h, k, a, b].some(isNaN) && a > 0 && b > 0) { currentFunctionType = FUNCTION_TYPE.ELLIPSE; ellipseParams = { h, k, a, b }; return true; }
+    }
+    currentFunctionType = FUNCTION_TYPE.STANDARD;
+    try { return math.compile(originalExpr); } catch { return null; }
+  }
+
+  function evaluateFunc(compiled, x) { try { return compiled.evaluate({ x }); } catch { return NaN; } }
+
+  function drawFunction(color) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    let first = true;
+    const step = 1 / scale;
+    let {x: startX} = toGraphCoords(0, 0);
+    let {x: endX} = toGraphCoords(canvas.width, 0);
+    for (let x = startX; x <= endX; x += step) {
+      const y = evaluateFunc(compiledFunc, x);
+      if (isNaN(y) || !isFinite(y)) { first = true; continue; }
+      const { px, py } = toCanvasCoords(x, y);
+      if (first) { ctx.moveTo(px, py); first = false; } else { ctx.lineTo(px, py); }
+    }
+    ctx.stroke();
+  }
+
+  function drawCircle(h, k, r, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    const { px: centerX, py: centerY } = toCanvasCoords(h, k);
+    ctx.arc(centerX, centerY, r * scale, 0, 2 * Math.PI); ctx.stroke();
+  }
+
+  function drawEllipse(h, k, a, b, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    const { px: centerX, py: centerY } = toCanvasCoords(h, k);
+    ctx.ellipse(centerX, centerY, a * scale, b * scale, 0, 0, 2 * Math.PI); ctx.stroke();
+  }
+
+  function drawParabola(h, k, a, type, color) {
+    ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    let first = true;
+    if (type === 'vertical') { 
+        const {x: startX} = toGraphCoords(0, 0); const {x: endX} = toGraphCoords(canvas.width, 0);
+        const step = (endX - startX) / canvas.width;
+        for(let x = startX; x <= endX; x += step){
+            const y = ((x-h)**2) / (4*a) + k;
+            if(isNaN(y)) { first = true; continue; }
+            const {px, py} = toCanvasCoords(x,y);
+            if(first) { ctx.moveTo(px, py); first = false; } else { ctx.lineTo(px, py); }
+        }
+    } else {
+        const {y: startY} = toGraphCoords(0, canvas.height); const {y: endY} = toGraphCoords(0, 0);
+        const step = (endY - startY) / canvas.height;
+        for(let y = startY; y <= endY; y += step){
+            const x = ((y-k)**2) / (4*a) + h;
+            if(isNaN(x)) { first = true; continue; }
+            const {px, py} = toCanvasCoords(x,y);
+            if(first) { ctx.moveTo(px, py); first = false; } else { ctx.lineTo(px, py); }
+        }
+    }
+    ctx.stroke();
+  }
+
+  function integrateFunction(a, b, n=1000) { /* ... original untouched ... */
+    if(a === b) return 0;
+    if(b < a) [a, b] = [b, a];
+    const h = (b - a) / n; let s = evaluateFunc(compiledFunc, a) + evaluateFunc(compiledFunc, b);
+    for(let i = 1; i < n; i += 2) s += 4 * evaluateFunc(compiledFunc, a + i * h);
+    for(let i = 2; i < n-1; i += 2) s += 2 * evaluateFunc(compiledFunc, a + i * h);
+    return (h / 3) * s;
+  }
+
+  function integrateAbsFunction(a, b, n=1000) { /* ... original untouched ... */
+     if(a === b) return 0;
+    if(b < a) [a, b] = [b, a];
+    const h = (b - a) / n; let s = Math.abs(evaluateFunc(compiledFunc, a)) + Math.abs(evaluateFunc(compiledFunc, b));
+    for(let i = 1; i < n; i += 2) s += 4 * Math.abs(evaluateFunc(compiledFunc, a + i * h));
+    for(let i = 2; i < n-1; i += 2) s += 2 * Math.abs(evaluateFunc(compiledFunc, a + i * h));
+    return (h / 3) * s;
+  }
+  
+  function calculateIntegralAndArea(a_in, b_in) { /* ... original untouched ... */
+      let a = a_in, b = b_in;
+      const axis = document.querySelector('input[name="integration-axis"]:checked').value;
+      let integral = 0, area = 0;
+      if (axis === 'x') {
+          if (currentFunctionType === FUNCTION_TYPE.STANDARD && compiledFunc) {
+              integral = integrateFunction(a, b);
+              area = integrateAbsFunction(a, b);
+          } else { 
+              const n = 1000; if (b < a) [a,b] = [b,a]; const dx = (b-a)/n;
+              for(let i=0; i<n; i++){
+                  const x = a + i*dx; let y1=NaN, y2=NaN;
+                  if (currentFunctionType === FUNCTION_TYPE.CIRCLE) { const {h,k,r} = circleParams; if(r**2 >= (x-h)**2) { y1=k+Math.sqrt(r**2-(x-h)**2); y2=k-Math.sqrt(r**2-(x-h)**2); }}
+                  else if (currentFunctionType === FUNCTION_TYPE.ELLIPSE) { const {h,k,a:ea,b:eb} = ellipseParams; if(ea**2 >= (x-h)**2) { y1=k+eb/ea*Math.sqrt(ea**2-(x-h)**2); y2=k-eb/ea*Math.sqrt(ea**2-(x-h)**2); }}
+                  else if (currentFunctionType === FUNCTION_TYPE.PARABOLA) { const {type,h,k,a:pa} = parabolaParams;
+                      if (type === 'vertical') y1 = (x-h)**2/(4*pa)+k;
+                      else if (4*pa*(x-h)>=0) { y1=k+Math.sqrt(4*pa*(x-h)); y2=k-Math.sqrt(4*pa*(x-h)); }
+                  }
+                  if(!isNaN(y1) && isNaN(y2)) { area += Math.abs(y1) * dx; integral += y1*dx;
+                  } else if(!isNaN(y1) && !isNaN(y2)){ area += Math.abs(y1-y2) * dx; integral += (y1-y2)*dx; }
+              }
+          }
+      } else { 
+          const n = 1000; if (b < a) [a,b] = [b,a]; const dy = (b-a)/n;
+          for(let i=0; i<n; i++){
+              const y = a + i*dy; let x1=NaN, x2=NaN;
+              if (currentFunctionType === FUNCTION_TYPE.CIRCLE) { const {h,k,r} = circleParams; if(r**2 >= (y-k)**2) { x1=h+Math.sqrt(r**2-(y-k)**2); x2=h-Math.sqrt(r**2-(y-k)**2); }}
+              else if (currentFunctionType === FUNCTION_TYPE.ELLIPSE) { const {h,k,a:ea,b:eb} = ellipseParams; if(eb**2 >= (y-k)**2) { x1=h+ea/eb*Math.sqrt(eb**2-(y-k)**2); x2=h-ea/eb*Math.sqrt(eb**2-(y-k)**2); }}
+              else if (currentFunctionType === FUNCTION_TYPE.PARABOLA) { const {type,h,k,a:pa} = parabolaParams;
+                  if (type === 'horizontal') x1 = (y-k)**2/(4*pa)+h;
+                  else if (4*pa*(y-k)>=0) { x1=h+Math.sqrt(4*pa*(y-k)); x2=h-Math.sqrt(4*pa*(y-k)); }
+              }
+              if(!isNaN(x1) && isNaN(x2)) { area += Math.abs(x1) * dy; integral += x1*dy;
+              } else if(!isNaN(x1) && !isNaN(x2)){ area += Math.abs(x1-x2) * dy; integral += (x1-x2)*dy; }
+          }
+      }
+      return { integral, area };
+  }
+
+  function drawIntegralArea(a, b) { /* ... original untouched ... */
+    if(a === b) return;
+    const axis = document.querySelector('input[name="integration-axis"]:checked').value;
+    if(b < a) [a, b] = [b, a];
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--area-color');
+    ctx.beginPath(); const n = 500;
+    if (axis === 'x') {
+        const step = (b-a)/n;
+        const y_upper = (x) => {
+            if (currentFunctionType === FUNCTION_TYPE.STANDARD) return evaluateFunc(compiledFunc, x);
+            if (circleParams) { const {h,k,r} = circleParams; return r**2<(x-h)**2?NaN:k+Math.sqrt(r**2-(x-h)**2); }
+            if (ellipseParams) { const {h,k,a:ea,b:eb}=ellipseParams; return ea**2<(x-h)**2?NaN:k+eb/ea*Math.sqrt(ea**2-(x-h)**2); }
+            if (parabolaParams) { const {type,h,k,a:pa} = parabolaParams; if(type==='vertical') return (x-h)**2/(4*pa)+k; else return 4*pa*(x-h)<0?NaN:k+Math.sqrt(4*pa*(x-h)); }
+            return NaN;
+        }
+        const y_lower = (x) => {
+            if (circleParams) { const {h,k,r} = circleParams; return r**2<(x-h)**2?NaN:k-Math.sqrt(r**2-(x-h)**2); }
+            if (ellipseParams) { const {h,k,a:ea,b:eb}=ellipseParams; return ea**2<(x-h)**2?NaN:k-eb/ea*Math.sqrt(ea**2-(x-h)**2); }
+            if (parabolaParams) { const {type,h,k,a:pa} = parabolaParams; if(type==='horizontal') return 4*pa*(x-h)<0?NaN:k-Math.sqrt(4*pa*(x-h)); }
+            return 0; 
+        }
+        let first = true;
+        for(let x = a; x <= b; x+=step) { const y = y_upper(x); if(isNaN(y)) continue; const {px, py} = toCanvasCoords(x,y); if(first){ ctx.moveTo(px,py); first = false;} else {ctx.lineTo(px,py);} }
+        for(let x = b; x >= a; x-=step) { const y = y_lower(x); if(isNaN(y)) continue; const {px, py} = toCanvasCoords(x,y); ctx.lineTo(px,py); }
+    } else {
+        const step = (b-a)/n;
+        const x_upper = (y) => {
+            if (circleParams) { const {h,k,r} = circleParams; return r**2<(y-k)**2?NaN:h+Math.sqrt(r**2-(y-k)**2); }
+            if (ellipseParams) { const {h,k,a:ea,b:eb}=ellipseParams; return eb**2<(y-k)**2?NaN:h+ea/eb*Math.sqrt(eb**2-(y-k)**2); }
+            if (parabolaParams) { const {type,h,k,a:pa} = parabolaParams; if(type==='horizontal') return (y-k)**2/(4*pa)+h; else return 4*pa*(y-k)<0?NaN:h+Math.sqrt(4*pa*(y-k)); }
+            return NaN;
+        }
+        const x_lower = (y) => {
+            if (circleParams) { const {h,k,r} = circleParams; return r**2<(y-k)**2?NaN:h-Math.sqrt(r**2-(y-k)**2); }
+            if (ellipseParams) { const {h,k,a:ea,b:eb}=ellipseParams; return eb**2<(y-k)**2?NaN:h-ea/eb*Math.sqrt(eb**2-(y-k)**2); }
+            if (parabolaParams) { const {type,h,k,a:pa} = parabolaParams; if(type==='vertical') return 4*pa*(y-k)<0?NaN:h-Math.sqrt(4*pa*(y-k)); }
+            return 0;
+        }
+        let first = true;
+        for(let y = a; y <= b; y+=step) { const x = x_upper(y); if(isNaN(x)) continue; const {px,py} = toCanvasCoords(x,y); if(first){ ctx.moveTo(px,py); first=false; } else { ctx.lineTo(px,py); } }
+        for(let y = b; y >= a; y-=step) { const x = x_lower(y); if(isNaN(x)) continue; const {px,py} = toCanvasCoords(x,y); ctx.lineTo(px,py); }
+    }
+    ctx.closePath(); ctx.fill();
+  }
+
+  function standard_draw() {
+    clearCanvas(); drawAxes();
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--graph-color-1');
+    if(showGraphCheckbox.checked) {
+      if (currentFunctionType === FUNCTION_TYPE.CIRCLE && circleParams) drawCircle(circleParams.h, circleParams.k, circleParams.r, color);
+      else if (currentFunctionType === FUNCTION_TYPE.ELLIPSE && ellipseParams) drawEllipse(ellipseParams.h, ellipseParams.k, ellipseParams.a, ellipseParams.b, color);
+      else if (currentFunctionType === FUNCTION_TYPE.PARABOLA && parabolaParams) drawParabola(parabolaParams.h, parabolaParams.k, parabolaParams.a, parabolaParams.type, color);
+      else if (compiledFunc) drawFunction(color);
+    }
+    resultSpan.textContent = ''; areaSpan.textContent = '';
+    if(showIntegralCheckbox.checked) {
+      const a = parseFloat(lowerLimitInput.value);
+      const b = parseFloat(upperLimitInput.value);
+      if(isNaN(a) || isNaN(b)) return;
+      drawIntegralArea(a, b);
+      const { integral, area } = calculateIntegralAndArea(a, b);
+      resultSpan.textContent = integral.toFixed(6);
+      areaSpan.textContent = area.toFixed(6);
+    }
+  }
+
+  function standard_handlePlotRequest() {
+      const expr = funcInput.value.trim();
+      if(!expr) { alert('Please enter a function expression to plot.'); return; }
+      const compiled = standard_compileFunction(expr);
+      if(!compiled && currentFunctionType === FUNCTION_TYPE.STANDARD) { alert('Invalid function expression. Please check your syntax.'); return; }
+      compiledFunc = compiled;
+      addToHistory(funcInput.value.trim());
+      standard_draw();
+  }
+  drawBtn.addEventListener('click', standard_handlePlotRequest);
+  // Expose to global scope for the tab switcher
+  window.standard_handlePlotRequest = standard_handlePlotRequest;
+}
+
+// ===== NEW ENCLOSED AREA LOGIC =====
+{
+    const enclosedFuncInputs = document.querySelectorAll('.enclosed-func-input');
+    const enclosedDrawBtn = document.getElementById('enclosed-drawBtn');
+    const enclosedLowerLimit = document.getElementById('enclosed-lowerLimit');
+    const enclosedUpperLimit = document.getElementById('enclosed-upperLimit');
+    const enclosedAreaSpan = document.getElementById('enclosed-areaResult');
+
+    let compiledEnclosedFunctions = [];
+
+    function enclosed_compileFunction(expr) {
+        if (!expr) return null;
+        try {
+            return math.compile(expr);
+        } catch {
+            return null;
+        }
+    }
+
+    function enclosed_draw() {
+        clearCanvas();
+        drawAxes();
+        
+        const colors = ['--graph-color-1', '--graph-color-2', '--graph-color-3', '--graph-color-4'];
+        
+        // Draw each function
+        compiledEnclosedFunctions.forEach((compiled, i) => {
+            if (compiled) {
+                const color = getComputedStyle(document.documentElement).getPropertyValue(colors[i]);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                let first = true;
+                const step = 1 / scale;
+                let {x: startX} = toGraphCoords(0, 0);
+                let {x: endX} = toGraphCoords(canvas.width, 0);
+                for (let x = startX; x <= endX; x += step) {
+                    let y;
+                    try { y = compiled.evaluate({x}); } catch { y = NaN; }
+                    if (isNaN(y) || !isFinite(y)) { first = true; continue; }
+                    const { px, py } = toCanvasCoords(x, y);
+                    if (first) { ctx.moveTo(px, py); first = false; } else { ctx.lineTo(px, py); }
+                }
+                ctx.stroke();
+            }
+        });
+
+        // Calculate and draw area
+        let a = parseFloat(enclosedLowerLimit.value);
+        let b = parseFloat(enclosedUpperLimit.value);
+        if (isNaN(a) || isNaN(b)) {
+            enclosedAreaSpan.textContent = '';
+            return;
+        };
+
+        if(b < a) [a, b] = [b, a];
+        const n = 1000;
+        const dx = (b - a) / n;
+        let totalArea = 0;
+        const activeFunctions = compiledEnclosedFunctions.filter(f => f);
+        if (activeFunctions.length < 2) {
+             enclosedAreaSpan.textContent = 'Need 2+ functions';
+             return;
+        }
+
+        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--enclosed-area-color');
+        ctx.beginPath();
+        
+        let upperPoints = [], lowerPoints = [];
+        for (let i = 0; i <= n; i++) {
+            const x = a + i * dx;
+            let y_values = [];
+            activeFunctions.forEach(f => {
+                 try { y_values.push(f.evaluate({x})); } catch { /* ignore errors */ }
+            });
+            const valid_y = y_values.filter(y => isFinite(y));
+            if(valid_y.length < 2) continue;
+            
+            const y_max = Math.max(...valid_y);
+            const y_min = Math.min(...valid_y);
+            
+            totalArea += (y_max - y_min) * dx;
+            upperPoints.push(toCanvasCoords(x, y_max));
+            lowerPoints.push(toCanvasCoords(x, y_min));
+        }
+        
+        if (upperPoints.length > 0 && lowerPoints.length > 0) {
+            upperPoints.forEach((p, i) => i === 0 ? ctx.moveTo(p.px, p.py) : ctx.lineTo(p.px, p.py));
+            lowerPoints.reverse().forEach(p => ctx.lineTo(p.px, p.py));
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        enclosedAreaSpan.textContent = totalArea.toFixed(6);
+    }
+
+    function enclosed_handlePlotRequest() {
+        compiledEnclosedFunctions = [];
+        let hasValidFunction = false;
+        enclosedFuncInputs.forEach(input => {
+            const expr = input.value.trim();
+            const compiled = enclosed_compileFunction(expr);
+            compiledEnclosedFunctions.push(compiled);
+            if(compiled) {
+                hasValidFunction = true;
+                addToHistory(expr);
+            }
+        });
+        enclosed_draw();
+    }
+    enclosedDrawBtn.addEventListener('click', enclosed_handlePlotRequest);
+    // Expose to global scope for the tab switcher
+    window.enclosed_handlePlotRequest = enclosed_handlePlotRequest;
+}
+
+// ===== GLOBAL VIEW CONTROLS =====
+const themeButtons = document.querySelectorAll('.theme-btn');
+themeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.body.setAttribute('data-theme', btn.dataset.theme);
+        themeButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        if (activeTab === 'standard') standard_handlePlotRequest();
+        else enclosed_handlePlotRequest();
+    });
+});
+document.querySelector('.theme-btn[data-theme="light"]').classList.add('active');
+
+function clearCanvas() { ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--panel-color'); ctx.fillRect(0, 0, canvas.width, canvas.height); }
+function toCanvasCoords(x, y) { return { px: offsetX + x * scale, py: offsetY - y * scale }; }
+function toGraphCoords(px, py) { return { x: (px - offsetX) / scale, y: (offsetY - py) / scale }; }
+function drawAxes() {
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--axis-color');
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(0, offsetY); ctx.lineTo(canvas.width, offsetY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(offsetX, 0); ctx.lineTo(offsetX, canvas.height); ctx.stroke();
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--tick-color');
+    ctx.font = '11px Inter, sans-serif'; const tickLength = 6;
+    let {x: startX, y: startY} = toGraphCoords(0, canvas.height);
+    let {x: endX, y: endY} = toGraphCoords(canvas.width, 0);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let i = Math.floor(startX); i <= endX; i++) {
+        if (i === 0) continue;
+        const {px} = toCanvasCoords(i, 0);
+        ctx.beginPath(); ctx.moveTo(px, offsetY - tickLength/2); ctx.lineTo(px, offsetY + tickLength/2); ctx.stroke();
+        ctx.fillText(i, px, offsetY + tickLength + 2);
+    }
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let i = Math.floor(startY); i <= endY; i++) {
+        if (i === 0) continue;
+        const {py} = toCanvasCoords(0, i);
+        ctx.beginPath(); ctx.moveTo(offsetX - tickLength/2, py); ctx.lineTo(offsetX + tickLength/2, py); ctx.stroke();
+        ctx.fillText(i, offsetX - tickLength - 4, py);
+    }
+}
+function redrawCurrentTab() {
+    if (activeTab === 'standard') standard_draw();
+    else enclosed_draw();
+}
+function resetView() { scale = 50; offsetX = canvas.width / 2; offsetY = canvas.height / 2; redrawCurrentTab(); }
+
+// --- Mouse and Touch Controls ---
+canvas.addEventListener('mousedown', e => { isDragging = true; dragStartX = e.clientX; dragStartY = e.clientY; dragOffsetX = offsetX; dragOffsetY = offsetY; });
+canvas.addEventListener('mouseup', () => isDragging = false);
+canvas.addEventListener('mouseleave', () => isDragging = false);
+canvas.addEventListener('mousemove', e => { if(!isDragging) return; offsetX = dragOffsetX + e.clientX - dragStartX; offsetY = dragOffsetY + e.clientY - dragStartY; redrawCurrentTab(); });
+canvas.addEventListener('wheel', e => { e.preventDefault(); const zoomIntensity = 0.1; const {x: gX, y: gY} = toGraphCoords(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top); scale *= (e.deltaY < 0) ? (1 + zoomIntensity) : (1 / (1 + zoomIntensity)); const {px: newPx, py: newPy} = toCanvasCoords(gX, gY); offsetX += (e.clientX - canvas.getBoundingClientRect().left) - newPx; offsetY += (e.clientY - canvas.getBoundingClientRect().top) - newPy; redrawCurrentTab(); }, { passive: false });
+canvas.addEventListener('touchstart', e => { e.preventDefault(); if (e.touches.length === 1) { const touch = e.touches[0]; isDragging = true; dragStartX = touch.clientX; dragStartY = touch.clientY; dragOffsetX = offsetX; dragOffsetY = offsetY; } else if (e.touches.length === 2) { const t1=e.touches[0],t2=e.touches[1]; touchStartDistance=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY); touchStartScale=scale; touchStartOffsetX=offsetX; touchStartOffsetY=offsetY; } });
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (e.touches.length === 1 && isDragging) { const touch=e.touches[0]; offsetX=dragOffsetX+touch.clientX-dragStartX; offsetY=dragOffsetY+touch.clientY-dragStartY; redrawCurrentTab(); } else if (e.touches.length===2) { const t1=e.touches[0],t2=e.touches[1]; const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY); if(touchStartDistance&&touchStartScale){ const newScale=touchStartScale*(dist/touchStartDistance); const cX=(t1.clientX+t2.clientX)/2,cY=(t1.clientY+t2.clientY)/2; const gX_b=(cX-touchStartOffsetX)/touchStartScale,gY_b=(touchStartOffsetY-cY)/touchStartScale; const gX_a=(cX-offsetX)/newScale,gY_a=(offsetY-cY)/newScale; scale=newScale; offsetX+=(gX_a-gX_b)*scale; offsetY+=(gY_a-gY_b)*scale; redrawCurrentTab(); } } });
+canvas.addEventListener('touchend', e => { e.preventDefault(); isDragging = false; touchStartDistance = null; touchStartScale = null; });
+let lastTap = 0; canvas.addEventListener('touchend', e => { const currentTime = new Date().getTime(); const tapLength = currentTime - lastTap; if (tapLength < 300 && tapLength > 0) { resetView(); } lastTap = currentTime; });
+
+// Initial draw for the default tab
+standard_handlePlotRequest();
+
+</script>
+
+</body>
+</html>
