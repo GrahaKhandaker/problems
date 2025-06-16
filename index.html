@@ -142,10 +142,61 @@
   #resultsContainer > div, #enclosed-resultsContainer > div { flex: 1; text-align: center; color: var(--success-color); }
   #resultsContainer > div span, #enclosed-resultsContainer > div span { display: block; margin-top: 6px; font-weight: 700; font-size: 1.6rem; color: var(--success-dark); user-select: text; }
 
-  #graphContainer { box-shadow: 0 8px 30px var(--shadow-color); border-radius: 15px; overflow: hidden; background: var(--panel-color); width: 90%; max-width: 900px; height: 550px; touch-action: none; transition: all 0.3s ease; }
+  #graphContainer {
+    position: relative; /* Needed for positioning zoom buttons */
+    box-shadow: 0 8px 30px var(--shadow-color);
+    border-radius: 15px;
+    overflow: hidden;
+    background: var(--panel-color);
+    width: 90%;
+    max-width: 900px;
+    height: 550px;
+    touch-action: none;
+    transition: all 0.3s ease;
+  }
   
   canvas { display: block; width: 100%; height: 100%; cursor: grab; }
   canvas:active { cursor: grabbing; }
+
+  /* New styles for zoom buttons */
+  #zoom-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 10;
+  }
+
+  #zoom-controls button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    border: 2px solid var(--panel-color);
+    box-shadow: 0 2px 8px var(--shadow-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    line-height: 1;
+    padding: 0;
+    transition: all 0.2s ease, background-color 0.2s, transform 0.2s;
+  }
+  
+  #zoom-controls button:hover {
+    background-color: var(--primary-hover);
+    transform: scale(1.1) translateY(0); /* Override main button hover */
+    box-shadow: 0 4px 12px var(--shadow-color);
+  }
+
+  #zoom-controls button:active {
+    transform: scale(1.0);
+  }
 
   #function-inputs { display: grid; grid-template-columns: 1fr; gap: 5px; margin-bottom: 20px; }
   .function-input-group { position: relative; }
@@ -161,6 +212,8 @@
     #resultsContainer, #enclosed-resultsContainer { flex-direction: column; gap: 20px; text-align: center; }
     #theme-selector { top: 60px; right: 10px; flex-wrap: wrap; width: 100px; justify-content: flex-end; }
     #history-panel { width: 200px; }
+    #zoom-controls { bottom: 15px; right: 15px; }
+    #zoom-controls button { width: 40px; height: 40px; }
   }
 </style>
 </head>
@@ -198,7 +251,7 @@
     <li><strong>Plot ellipses</strong> using <code>(x-h)^2/a^2 + (y-k)^2/b^2 = 1</code> format</li>
     <li><strong>Calculate area and integral values</strong> with respect to either the <strong>x-axis</strong> or the <strong>y-axis</strong>.</li>
     <li>Use the <strong>"Calculate Enclosed Area"</strong> tab to find the area between multiple functions.</li>
-    <li>You can <strong>zoom in/out with mouse wheel</strong> and <strong>drag the graph</strong> to explore.</li>
+    <li>You can <strong>zoom in/out with the +/- buttons</strong> and <strong>drag the graph</strong> to explore.</li>
   </ul>
   Just type your function, check your options, and press "Plot Graph" to see your results!
 </section>
@@ -287,6 +340,14 @@
 
 <div id="graphContainer" aria-label="Graph display area">
   <canvas id="graphCanvas" width="900" height="550"></canvas>
+  <div id="zoom-controls">
+    <button id="zoom-in-btn" aria-label="Zoom In">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+    <button id="zoom-out-btn" aria-label="Zoom Out">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+    </button>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.min.js"></script>
@@ -811,11 +872,45 @@ canvas.addEventListener('mousedown', e => { isDragging = true; dragStartX = e.cl
 canvas.addEventListener('mouseup', () => isDragging = false);
 canvas.addEventListener('mouseleave', () => isDragging = false);
 canvas.addEventListener('mousemove', e => { if(!isDragging) return; offsetX = dragOffsetX + e.clientX - dragStartX; offsetY = dragOffsetY + e.clientY - dragStartY; redrawCurrentTab(); });
-canvas.addEventListener('wheel', e => { e.preventDefault(); const zoomIntensity = 0.1; const {x: gX, y: gY} = toGraphCoords(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top); scale *= (e.deltaY < 0) ? (1 + zoomIntensity) : (1 / (1 + zoomIntensity)); const {px: newPx, py: newPy} = toCanvasCoords(gX, gY); offsetX += (e.clientX - canvas.getBoundingClientRect().left) - newPx; offsetY += (e.clientY - canvas.getBoundingClientRect().top) - newPy; redrawCurrentTab(); }, { passive: false });
+
+// ** REMOVED Wheel event listener **
+// canvas.addEventListener('wheel', e => { e.preventDefault(); const zoomIntensity = 0.1; const {x: gX, y: gY} = toGraphCoords(e.clientX - canvas.getBoundingClientRect().left, e.clientY - canvas.getBoundingClientRect().top); scale *= (e.deltaY < 0) ? (1 + zoomIntensity) : (1 / (1 + zoomIntensity)); const {px: newPx, py: newPy} = toCanvasCoords(gX, gY); offsetX += (e.clientX - canvas.getBoundingClientRect().left) - newPx; offsetY += (e.clientY - canvas.getBoundingClientRect().top) - newPy; redrawCurrentTab(); }, { passive: false });
+
 canvas.addEventListener('touchstart', e => { e.preventDefault(); if (e.touches.length === 1) { const touch = e.touches[0]; isDragging = true; dragStartX = touch.clientX; dragStartY = touch.clientY; dragOffsetX = offsetX; dragOffsetY = offsetY; } else if (e.touches.length === 2) { const t1=e.touches[0],t2=e.touches[1]; touchStartDistance=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY); touchStartScale=scale; touchStartOffsetX=offsetX; touchStartOffsetY=offsetY; } });
 canvas.addEventListener('touchmove', e => { e.preventDefault(); if (e.touches.length === 1 && isDragging) { const touch=e.touches[0]; offsetX=dragOffsetX+touch.clientX-dragStartX; offsetY=dragOffsetY+touch.clientY-dragStartY; redrawCurrentTab(); } else if (e.touches.length===2) { const t1=e.touches[0],t2=e.touches[1]; const dist=Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY); if(touchStartDistance&&touchStartScale){ const newScale=touchStartScale*(dist/touchStartDistance); const cX=(t1.clientX+t2.clientX)/2,cY=(t1.clientY+t2.clientY)/2; const gX_b=(cX-touchStartOffsetX)/touchStartScale,gY_b=(touchStartOffsetY-cY)/touchStartScale; const gX_a=(cX-offsetX)/newScale,gY_a=(offsetY-cY)/newScale; scale=newScale; offsetX+=(gX_a-gX_b)*scale; offsetY+=(gY_a-gY_b)*scale; redrawCurrentTab(); } } });
 canvas.addEventListener('touchend', e => { e.preventDefault(); isDragging = false; touchStartDistance = null; touchStartScale = null; });
 let lastTap = 0; canvas.addEventListener('touchend', e => { const currentTime = new Date().getTime(); const tapLength = currentTime - lastTap; if (tapLength < 300 && tapLength > 0) { resetView(); } lastTap = currentTime; });
+
+// --- New Zoom Button Logic ---
+function applyZoom(direction) {
+    const zoomFactor = 1.2;
+    // We zoom relative to the center of the canvas
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    // Get the graph coordinates at the center of the canvas before zooming
+    const { x: graphX, y: graphY } = toGraphCoords(centerX, centerY);
+    
+    // Apply the zoom
+    if (direction === 'in') {
+        scale *= zoomFactor;
+    } else {
+        scale /= zoomFactor;
+    }
+
+    // Get the new canvas coordinates of the old center point
+    const { px: newPx, py: newPy } = toCanvasCoords(graphX, graphY);
+
+    // Adjust the offset to keep the zoom centered
+    offsetX += centerX - newPx;
+    offsetY += centerY - newPy;
+    
+    redrawCurrentTab();
+}
+
+document.getElementById('zoom-in-btn').addEventListener('click', () => applyZoom('in'));
+document.getElementById('zoom-out-btn').addEventListener('click', () => applyZoom('out'));
+
 
 // Initial draw for the default tab
 standard_handlePlotRequest();
